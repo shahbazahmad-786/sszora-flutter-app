@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ssz_ora_flutter/core/api.dart';
 import 'package:ssz_ora_flutter/core/theme.dart';
@@ -12,25 +13,42 @@ class StoreImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final child = url == null || url!.isEmpty
-        ? const ColoredBox(
-            color: AppColors.navy50,
-            child: Center(child: Icon(Icons.image_outlined, color: AppColors.navy300)),
-          )
-        : CachedNetworkImage(
-            imageUrl: url!,
-            fit: fit,
-            placeholder: (_, _) => const ColoredBox(color: AppColors.navy50),
-            errorWidget: (_, _, _) => const ColoredBox(
-              color: AppColors.navy50,
-              child: Center(child: Icon(Icons.broken_image_outlined, color: AppColors.navy300)),
-            ),
-          );
-
+    final child = url == null || url!.isEmpty ? _missing : _network(url!);
     if (radius == 0) return child;
     return ClipRRect(borderRadius: BorderRadius.circular(radius), child: child);
   }
+
+  Widget _network(String imageUrl) {
+    // Image files are served without Access-Control-Allow-Origin. Flutter web's
+    // default decoder fetches them with CORS and reports a network error for each
+    // one. An HTML image element can display the same URL without that header.
+    if (kIsWeb) {
+      return Image.network(
+        imageUrl,
+        fit: fit,
+        webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+        errorBuilder: (_, _, _) => _broken,
+        loadingBuilder: (_, child, progress) => progress == null ? child : const ColoredBox(color: AppColors.navy50),
+      );
+    }
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      fit: fit,
+      placeholder: (_, _) => const ColoredBox(color: AppColors.navy50),
+      errorWidget: (_, _, _) => _broken,
+    );
+  }
 }
+
+const Widget _missing = ColoredBox(
+  color: AppColors.navy50,
+  child: Center(child: Icon(Icons.image_outlined, color: AppColors.navy300)),
+);
+
+const Widget _broken = ColoredBox(
+  color: AppColors.navy50,
+  child: Center(child: Icon(Icons.broken_image_outlined, color: AppColors.navy300)),
+);
 
 class BrandButton extends StatelessWidget {
   const BrandButton({
