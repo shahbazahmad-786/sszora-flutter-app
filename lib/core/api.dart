@@ -108,9 +108,25 @@ class ApiClient {
 
   Future<dynamic> _send(Future<http.Response> Function() call) async {
     try {
+      return await _attempt(call);
+    } on ApiException catch (error) {
+      if (!_retryable(error)) rethrow;
+      return _attempt(call);
+    }
+  }
+
+  bool _retryable(ApiException error) {
+    final text = error.message.toLowerCase();
+    return text.contains('connection closed') || text.contains('connection reset') || text.contains('broken pipe');
+  }
+
+  Future<dynamic> _attempt(Future<http.Response> Function() call) async {
+    try {
       return _decode(await call().timeout(const Duration(seconds: 40)));
     } on ApiException {
       rethrow;
+    } on HandshakeException {
+      throw ApiException('This device does not trust the store certificate.');
     } on SocketException {
       throw ApiException('Cannot reach the store. Check the server address and your connection.');
     } on TimeoutException {
@@ -120,6 +136,10 @@ class ApiClient {
     } on FormatException catch (error) {
       throw ApiException('The server returned invalid data: ${error.message}');
     } catch (error) {
+      final text = error.toString();
+      if (text.contains('CERTIFICATE_VERIFY_FAILED') || text.contains('HandshakeException')) {
+        throw ApiException('This device does not trust the store certificate.');
+      }
       throw ApiException('Request failed (${error.runtimeType}): $error');
     }
   }
