@@ -69,21 +69,104 @@ class BootScreen extends StatefulWidget {
   State<BootScreen> createState() => _BootScreenState();
 }
 
-class _BootScreenState extends State<BootScreen> {
+class _BootScreenState extends State<BootScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entrance;
+
   @override
   void initState() {
     super.initState();
+    _entrance = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 850),
+    )..forward();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AppState>().boot();
     });
   }
 
   @override
+  void dispose() {
+    _entrance.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    final logoWidth = (viewportWidth * 0.84).clamp(0.0, 320.0).toDouble();
     if (!app.ready || app.busy) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: AppColors.brand)),
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFFFFF8F2), Colors.white],
+            ),
+          ),
+          child: Stack(
+            children: [
+              const Positioned(
+                top: -110,
+                right: -80,
+                child: _SplashGlow(size: 270),
+              ),
+              const Positioned(
+                bottom: -155,
+                left: -90,
+                child: _SplashGlow(size: 320),
+              ),
+              SafeArea(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Center(
+                        child: FadeTransition(
+                          opacity: _entrance,
+                          child: ScaleTransition(
+                            scale: Tween<double>(begin: 0.94, end: 1).animate(
+                              CurvedAnimation(
+                                parent: _entrance,
+                                curve: Curves.easeOutCubic,
+                              ),
+                            ),
+                            child: Image.asset(
+                              'assets/branding/sszora_logo.png',
+                              width: logoWidth,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    const SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: CircularProgressIndicator(
+                        color: AppColors.brand,
+                        strokeWidth: 2.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'GETTING THINGS READY',
+                      style: TextStyle(
+                        color: AppColors.navy400,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 44),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
     if (app.bootError != null && app.store.isEmpty) {
@@ -105,5 +188,23 @@ class _BootScreenState extends State<BootScreen> {
       );
     }
     return const RootShell();
+  }
+}
+
+class _SplashGlow extends StatelessWidget {
+  const _SplashGlow({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: Color(0x18FF6B00),
+      ),
+    );
   }
 }

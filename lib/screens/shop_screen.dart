@@ -17,9 +17,10 @@ class ShopArgs {
 }
 
 class ShopScreen extends StatefulWidget {
-  const ShopScreen({super.key, this.args});
+  const ShopScreen({super.key, this.args, this.embedded = false});
 
   final ShopArgs? args;
+  final bool embedded;
 
   @override
   State<ShopScreen> createState() => _ShopScreenState();
@@ -234,7 +235,6 @@ class _ShopScreenState extends State<ShopScreen> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final embedded = widget.args == null;
     final body = _loading
         ? const Center(child: CircularProgressIndicator(color: AppColors.brand))
         : _error != null
@@ -312,7 +312,7 @@ class _ShopScreenState extends State<ShopScreen> {
                 ],
               );
 
-    if (embedded) return body;
+    if (widget.embedded) return body;
     return Scaffold(
       appBar: AppBar(title: Text(_title ?? 'Shop')),
       body: body,

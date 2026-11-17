@@ -131,13 +131,16 @@ class AppState extends ChangeNotifier {
     api.country = code.toUpperCase();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('country', api.country);
+    notifyListeners();
     try {
       final data = asMap(await api.post('/api/v1/country', {'code': api.country}));
-      if (data['store'] != null) store = asMap(data['store']);
+      if (data['store'] != null) {
+        store = asMap(data['store']);
+        notifyListeners();
+      }
     } catch (_) {
       // The next request still sends the selected country header.
     }
-    notifyListeners();
   }
 
   Future<String?> requestLoginCode(String email) async {

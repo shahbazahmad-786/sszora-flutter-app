@@ -25,10 +25,10 @@ class _RootShellState extends State<RootShell> {
     final width = MediaQuery.sizeOf(context).width;
     final wide = width >= 900;
     final pages = [
-      const HomeScreen(),
-      const ShopScreen(),
-      const CartScreen(embedded: true),
-      const AccountScreen(),
+      HomeScreen(key: ValueKey('home-${app.api.country}')),
+      ShopScreen(key: ValueKey('shop-${app.api.country}'), embedded: true),
+      CartScreen(key: ValueKey('cart-${app.api.country}'), embedded: true),
+      AccountScreen(key: ValueKey('account-${app.api.country}')),
     ];
 
     final content = IndexedStack(index: _index, children: pages);
@@ -50,12 +50,16 @@ class _RootShellState extends State<RootShell> {
         actions: [
           IconButton(onPressed: () => Navigator.pushNamed(context, '/search'), icon: const Icon(Icons.search)),
           PopupMenuButton<String>(
-            tooltip: 'Country',
+            tooltip: 'Country: ${app.api.country}',
             icon: const Icon(Icons.public),
             onSelected: app.setCountry,
             itemBuilder: (context) => [
               for (final raw in app.countries)
-                PopupMenuItem(value: str(asMap(raw)['code']), child: Text('${asMap(raw)['name']} · ${asMap(raw)['currency']}')),
+                CheckedPopupMenuItem(
+                  value: str(asMap(raw)['code']),
+                  checked: str(asMap(raw)['code']) == app.api.country,
+                  child: Text('${asMap(raw)['name']} · ${asMap(raw)['currency']}'),
+                ),
             ],
           ),
           IconButton(
